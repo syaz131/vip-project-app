@@ -1,28 +1,21 @@
-# Welcome to Data-Mining-Project :wave:
-data mining project 2020
+# Welcome to Visual Information Processing Project :wave:
+Visual Information Processing Project 2020
 
-## Read Bank csv file
-Bank_CS.csv 
+## Read uploaded image
+upload two or more images
 
-## Data Cleaning
-fill na values with median and average
+## VIP task
+**Make panorama image**
 
-string to uppercase
+**Change image to painted image**
 
-## Data Mining Task
-**SMOTE**
-
-**Classification**
-
-**Create ML Model**
-
-**Data Visualization**
-- create dashboard
+**App based**
+- create UI
 - using streamlit
 - publish through [Heroku](http://heroku.com/)
 
 ```bash
-streamlit run proj_DM.py
+streamlit run proj_VIP.py
 ```
 
-Pdf report using overleaf
+Mostly using opencv library
