@@ -1,8 +1,8 @@
 try:
 
-    from enum import Enum
-    from io import BytesIO, StringIO
-    from typing import Union
+    # from enum import Enum
+    # from io import BytesIO, StringIO
+    # from typing import Union
 
     import numpy as np
     import pandas as pd
@@ -27,14 +27,14 @@ class FileUpload(object):
     def __init__(self):
         self.fileTypes = ["csv", "png", "jpg"]
 
-    def run(self):
+    def run(self, countFile):
         """
         Upload File on Streamlit Code
         :return:
         """
         st.info(__doc__)
         st.markdown(STYLE, unsafe_allow_html=True)
-        file = st.file_uploader("Upload file", type=self.fileTypes)
+        file = st.file_uploader("Upload file", type=self.fileTypes, key=countFile)
         show_file = st.empty()
         if not file:
             show_file.info("Please upload a file of type: " + ", ".join(["png", "jpg"]))  # join(["csv", "png", "jpg"])
@@ -58,14 +58,24 @@ def img2gray(image):
     return gray
 
 
+countFile = 1
+
 if __name__ == "__main__":
     helper = FileUpload()
 
     # for i in range(0, 2):
-    img1 = helper.run()
+    img1 = helper.run(countFile)
+    countFile += 1
+
     if img1 is not None:
         gray1 = img2gray(img1)
 
-    # img2 = helper.run()
-    # if img2 is not None:
-    #     gray2 = img2gray(img2)
+    if img1 is not None:
+        img2 = helper.run(countFile)
+    try:
+        img2 = img2
+    except NameError:
+        print('No Second File')
+    else:
+        if img2 is not None:
+            gray2 = img2gray(img2)
