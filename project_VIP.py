@@ -4,6 +4,7 @@ try:
     import streamlit as st
     import cv2
     import os
+    import base64
 
     from PIL import Image
     from enum import Enum
@@ -68,6 +69,20 @@ class FileUpload(object):
             st.dataframe(data.head(10))
         file.close()
 
+    def get_image_download_link(self, array_image):
+        # markd = df.to_csv()
+        #
+        # b64 = base64.b64encode(markd.encode()).decode()  # some strings <-> bytes conversions necessary here
+        # href = f'<a href="data:file/csv;base64,{b64}" download="prediction.csv">Download csv file</a>'
+
+        PIL_image = Image.fromarray(array_image.astype('uint8'), 'RGB')
+
+        buffered = BytesIO()
+        PIL_image.save(buffered, format="png")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        href = f'<button><a href="data:file/png;base64,{img_str}" download="image_vip.png">Download Result Image</a></button>'
+        return href
+
 
 def img2gray(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -122,12 +137,12 @@ def stichingImage(images):
         stitcher = cv2.Stitcher.create()
         (status, result) = stitcher.stitch(images)
         if status == cv2.STITCHER_OK:
-            st.write('Panorama Generated')
-            # showAnImage(result)
+            st.success('Panorama Generated')
         else:
-            st.write('Panorama Generation Unsuccessful')
+            st.warning('Panorama Generation Unsuccessful')
     except:
-        st.write('Not enough image')
+        st.warning('Not enough image')
+
     return result
 
 
@@ -194,12 +209,29 @@ if __name__ == "__main__":
 
     # showMultipleImages(inputImages)
     st.subheader('Image Inserted')
-    if st.checkbox("Show Images?", True):
+    if st.checkbox("Show Images?", False):
         try:
             showImages(inputImages)
         except:
             st.warning('No Image or Not Update Image')
 
+    # =================== check NoneType Image ====================
+    # if inputImages[0] is not None:
+    #     st.markdown(helper.get_image_download_link(inputImages[0]), unsafe_allow_html=True)
+
+    st.subheader('End Upload Image Section')
+    st.write('*********')
+    st.header('Stitching Section')
     if st.button('Run Stitching'):
         stitchedImage = stichingImage(inputImages)
         showAnImage(stitchedImage)
+
+    # =================== try not define Image ====================
+    try:
+        if stitchedImage is not None:
+            st.markdown(helper.get_image_download_link(stitchedImage), unsafe_allow_html=True)
+    except:
+        print('stitchedImage Not defined')
+
+    st.subheader('End Stitching Section')
+    st.write('*********')
