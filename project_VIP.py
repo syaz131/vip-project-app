@@ -26,11 +26,15 @@ img {
 </style>
 """
 
-
-@st.cache(allow_output_mutation=True)
+# =================== dictionary tak function====================
+# @st.cache(allow_output_mutation=True)
 def get_static_store() -> Dict:
     """This dictionary is initialized once and can be used to store the files uploaded"""
     return {}
+
+def get_static_image() -> Dict:
+    return {}
+# =================== dictionary tak function====================
 
 
 class FileUpload(object):
@@ -52,7 +56,7 @@ class FileUpload(object):
             return
         content = file.getvalue()
         if isinstance(file, BytesIO):
-            show_file.image(file)
+            # show_file.image(file)
             # change from byteIO to array
             image = Image.open(file)
             img_array = np.array(image)
@@ -65,7 +69,7 @@ class FileUpload(object):
 
 def img2gray(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if isinstance(img[i], np.ndarray):
+    if isinstance(gray, np.ndarray):
         st.image(gray)
     return gray
 
@@ -76,119 +80,120 @@ def showAnImage(image):
 
 
 def showImages(images):
+    # if isinstance(images[0], None):
+    #     st.warning(len(images))
+    #     st.warning(type(images[0]))
+    #     st.warning(type(images[1]))
+
     for i in range(len(images)):
         showAnImage(images[i])
 
 
-def showMultipleImages(img):
-    plt.subplots(1, len(img), figsize=(7, 7))
+def showMultipleImages(images):
+    plt.subplots(1, len(images), figsize=(7, 7))
 
     # plt.figure(figsize=(5, 5))
     # plt.subplot(131), plt.imshow(img), plt.title('Original')
     # plt.xticks([]), plt.yticks([])
-    # plt.subplot(132), plt.imshow(blur1), plt.title('Averaging Filter')
-    # plt.xticks([]), plt.yticks([])
-    # plt.subplot(133), plt.imshow(blur2), plt.title('Gaussian Filter')
-    # plt.xticks([]), plt.yticks([])
     # plt.show()
 
-    for i in range(len(img)):
-        plt.subplot(1, 5, i + 1), plt.imshow(img[i]), plt.title('Image ' + str(i + 1))
+    for i in range(len(images)):
+        plt.subplot(1, 5, i + 1), plt.imshow(images[i]), plt.title('Image ' + str(i + 1))
         plt.xticks([]), plt.yticks([])
 
     st.pyplot()
 
 
-def resizeImage(img):
-    for i in range(len(img)):
-        if isinstance(img[i], np.ndarray):
-            curImg = cv2.resize(img[i], (0, 0), None, 0.2, 0.2)
-            img[i] = curImg
-    return img
+def resizeImage(images):
+    for i in range(len(images)):
+        if isinstance(images[i], np.ndarray):
+            curImg = cv2.resize(images[i], (0, 0), None, 0.2, 0.2)
+            images[i] = curImg
+    return images
 
 
-def stichingImage(img):
+def stichingImage(images):
     result = np.ndarray(shape=(2, 2))
     try:
-        img = resizeImage(img)
+        images = resizeImage(images)
         stitcher = cv2.Stitcher.create()
-        (status, result) = stitcher.stitch(img)
+        (status, result) = stitcher.stitch(images)
         if status == cv2.STITCHER_OK:
             st.write('Panorama Generated')
-            showAnImage(result)
+            # showAnImage(result)
         else:
             st.write('Panorama Generation Unsuccessful')
     except:
         st.write('Not enough image')
     return result
 
-
-# def file_selector(folder_path='.'):
-#     filenames = os.listdir(folder_path)
-#     selected_filename = st.selectbox('Select a folder', filenames)
-#     return os.path.join(folder_path, selected_filename)
-
+# =================== function tak function====================
 def readFolder():
-    images = []
     static_store = get_static_store()
+    static_image = get_static_image()
     file = st.file_uploader("Upload", type=["png", "jpg"])
     if file:
         # Process you file here
         value = file.getvalue()
-        show_file = st.empty()
-        if isinstance(file, BytesIO):
-            # show_file.image(file)
-            # change from byteIO to array
-            image = Image.open(file)
-            img_array = np.array(image)
-            images.append(img_array)
+        # show_file = st.empty()
+        # if isinstance(file, BytesIO):
+        # show_file.image(file)
+        # change from byteIO to array
 
         # And add it to the static_store if not already in
-        if not value in static_store.values():
+        if not value in static_image.values():
             static_store[file] = value
+            image = Image.open(file)
+            img_array = np.array(image)
+            static_image[file] = img_array
+
     else:
-        static_store.clear()  # Hack to clear list if the user clears the cache and reloads the page
-        st.info("Upload one or more `.py` files.")
+        static_image.clear()  # Hack to clear list if the user clears the cache and reloads the page
+        st.info("Upload one or more images files.")
 
     if st.button("Clear file list"):
         static_store.clear()
-        images.clear()
+        static_image.clear()
     if st.checkbox("Show file list?", True):
         st.write(list(static_store.keys()))
-    if st.button('Upload Images'):
-        return images
+    # if st.button('Update Image'):
+    #     for bytes in static_store:
+    #         image = Image.open(bytes)
+    #         img_array = np.array(image)
+    #         static_image.append(img_array)
+    #     return static_image
+# =================== function tak function====================
 
 
-# =========== streamlit UI =======================
+# ============================ streamlit UI ===========================
 colourNumber = st.sidebar.slider('Colour', 1, 10, 2)
 colourNumber = int(colourNumber)
 # countImage = st.sidebar.number_input('Number of image insert')
-countImage = st.sidebar.slider('Number of image', 1, 10, 2)
+countImage = st.sidebar.slider('Number of image', 1, 10, 3)
 countImage = int(countImage)
 st.set_option('deprecation.showfileUploaderEncoding', False)
+# ============================ streamlit UI ===========================
 
 if __name__ == "__main__":
-    img = []
 
+    inputImages = []
     st.title('Panorama and Paint by Numbers')
-
-    st.header('Image from folder')
-    img = readFolder()
-    # imageFromFolder = readFolder()
-    # showImages(imageFromFolder)
 
     st.write('*********')
     st.header('Upload Image Section')
-    # helper = FileUpload()
+    helper = FileUpload()
 
+    for i in range(0, countImage):
+        inputImages.append(helper.run(i))
 
-    # for i in range(0, countImage):
-    #     img.append(helper.run(i))
-
-    # showMultipleImages(img)
+    # showMultipleImages(inputImages)
     st.subheader('Image Inserted')
-    st.write(len(img))
-    showImages(img)
+    if st.checkbox("Show Images?", True):
+        try:
+            showImages(inputImages)
+        except:
+            st.warning('No Image or Not Update Image')
 
     if st.button('Run Stitching'):
-        stitchedImage = stichingImage(img)
+        stitchedImage = stichingImage(inputImages)
+        showAnImage(stitchedImage)
