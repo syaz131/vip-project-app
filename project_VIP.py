@@ -26,11 +26,13 @@ img {
 </style>
 """
 
+
 # =================== dictionary tak function====================
 # @st.cache(allow_output_mutation=True)
 def get_static_store() -> Dict:
     """This dictionary is initialized once and can be used to store the files uploaded"""
     return {}
+
 
 def get_static_image() -> Dict:
     return {}
@@ -73,7 +75,7 @@ def img2gray(image):
         st.image(gray)
     return gray
 
-
+# =================== show image function====================
 def showAnImage(image):
     if isinstance(image, np.ndarray):
         st.image(image)
@@ -102,6 +104,7 @@ def showMultipleImages(images):
         plt.xticks([]), plt.yticks([])
 
     st.pyplot()
+# =================== show image function====================
 
 
 def resizeImage(images):
@@ -126,6 +129,7 @@ def stichingImage(images):
     except:
         st.write('Not enough image')
     return result
+
 
 # =================== function tak function====================
 def readFolder():
@@ -162,6 +166,8 @@ def readFolder():
     #         img_array = np.array(image)
     #         static_image.append(img_array)
     #     return static_image
+
+
 # =================== function tak function====================
 
 
@@ -171,7 +177,7 @@ colourNumber = int(colourNumber)
 # countImage = st.sidebar.number_input('Number of image insert')
 countImage = st.sidebar.slider('Number of image', 1, 10, 3)
 countImage = int(countImage)
-st.set_option('deprecation.showfileUploaderEncoding', False)
+# st.set_option('deprecation.showfileUploaderEncoding', False)
 # ============================ streamlit UI ===========================
 
 if __name__ == "__main__":
