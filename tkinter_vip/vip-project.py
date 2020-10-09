@@ -3,6 +3,7 @@ from tkinter import *
 import tkinter.ttk as ttk
 from ttkthemes import ThemedStyle
 from PIL import ImageTk, Image, ImageChops
+import imutils
 
 import os
 import numpy as np
@@ -149,15 +150,53 @@ def stitchingImage():
             print('succ')
             Label(gui, text='Stitching success').pack()
             # stitchedImage = result
-            stitchedImage.append(result)
-            print(images[0].shape)
-            print(stitchedImage.shape)
-            print(result.shape)
+
+            # print(images[0].shape)
+            # print(stitchedImage.shape)
+            # print(result.shape)
 
             # ttk.Button(gui, text="Show Images Page", command=image_page(stitchedImage[0])).pack()
 
             # print(stitchedImage)
             # image_page(stitchedImage)
+
+            # create a 10 pixel border surrounding the stitched image
+            print("cropping...")
+            stitched = cv2.copyMakeBorder(result, 10, 10, 10, 10,
+                                          cv2.BORDER_CONSTANT, (0, 0, 0))
+
+            gray = cv2.cvtColor(stitched, cv2.COLOR_BGR2GRAY)
+            thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)[1]
+
+            cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                                    cv2.CHAIN_APPROX_SIMPLE)
+            cnts = imutils.grab_contours(cnts)
+            c = max(cnts, key=cv2.contourArea)
+
+            mask = np.zeros(thresh.shape, dtype="uint8")
+            (x, y, w, h) = cv2.boundingRect(c)
+            cv2.rectangle(mask, (x, y), (x + w, y + h), 255, -1)
+
+            minRect = mask.copy()
+            sub = mask.copy()
+            print("cropping1...")
+            while cv2.countNonZero(sub) > 0:
+                minRect = cv2.erode(minRect, None)
+                sub = cv2.subtract(minRect, thresh)
+
+            cnts = cv2.findContours(minRect.copy(), cv2.RETR_EXTERNAL,
+                                    cv2.CHAIN_APPROX_SIMPLE)
+            print("cropping2...")
+            cnts = imutils.grab_contours(cnts)
+            c = max(cnts, key=cv2.contourArea)
+            (x, y, w, h) = cv2.boundingRect(c)
+
+            stitched = stitched[y:y + h, x:x + w]
+
+            stitched = cv2.cvtColor(stitched, cv2.COLOR_BGR2RGB)
+            stitchedImage.append(stitched)
+            cv2.imwrite("output.png", stitched)
+            print("done crop...")
 
         else:
             Label(master=gui, textvariable='Images cannot be stitched').pack()
