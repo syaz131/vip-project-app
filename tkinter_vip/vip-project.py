@@ -18,20 +18,32 @@ gui = Tk()
 gui.geometry("1300x650")
 style = ThemedStyle(gui)
 
-style.set_theme("arc")
+style.set_theme("clearlooks")
 style.configure('my.TButton', foreground="white")
 gui.title("Panorama and Paint by Number")
 
+main_frame = Frame(gui)
+main_frame.pack(side=LEFT, fill=BOTH, expand=1)
+
+canvas = Canvas(main_frame)
+canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=canvas.yview)
+scrollbar.pack(side=RIGHT, fill=Y)
+canvas.configure(yscrollcommand=scrollbar.set)
+canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+
+second_frame = Frame(canvas)
+canvas.create_window((0, 0), window=second_frame, anchor='nw')
+
 
 def myClick():
-    mylabel = ttk.Label(gui, text="myclick clicked")
+    mylabel = ttk.Label(second_frame, text="myclick clicked")
     mylabel.pack()
 
-
 # -------- input field ---------
-input1 = Entry(gui, width=60)
+input1 = Entry(second_frame, width=60)
 input1.pack()
-
 
 def myInput():
     input01 = "Hello " + input1.get()
@@ -64,19 +76,6 @@ def browse_button():
         curImg = cv2.cvtColor(curImg, cv2.COLOR_BGR2RGB)
         # curImg = cv2.resize(curImg, (0, 0), None, 0.2, 0.2)
         images.append(curImg)
-
-
-# def readFolder():
-#     images.clear()
-#     # folder_path = 'C:/Users/Asus/Pictures/scott folder'
-#     myList = os.listdir(folder_path)
-#     print(f'Total no of images detected : {len(myList)}')
-#     print(len(images))
-#     for imgN in myList:
-#         curImg = cv2.imread(f'{folder_path}/{imgN}')
-#         curImg = cv2.cvtColor(curImg, cv2.COLOR_BGR2RGB)
-#         # curImg = cv2.resize(curImg, (0, 0), None, 0.2, 0.2)
-#         images.append(curImg)
 
 
 def showImages():
@@ -200,44 +199,40 @@ def stitchingImage():
             if status == 3:
                 errMsg = "Camera Parameters Adjust Fail"
 
-            Label(gui, text='Stitching Unsucessful.\n'+errMsg).pack()
+            Label(gui, text='Stitching Unsucessful.\n' + errMsg).pack()
     except:
         Label(master=gui, textvariable='Images cannot be stitched').pack()
 
 
-
-
 def main_page():
-    label_panorama = ttk.Label(gui, text="Panorama Section")
+    label_panorama = ttk.Label(second_frame, text="Panorama Section")
     label_panorama.pack()
 
-    btn_input1 = ttk.Button(gui, text="Input 1", command=myInput)
+    btn_input1 = ttk.Button(second_frame, text="Input 1", command=myInput)
     btn_input1.pack()
 
-    btn_run_stitch = ttk.Button(gui, text="Ex Button Click", command=myClick)
+    btn_run_stitch = ttk.Button(second_frame, text="Ex Button Click", command=myClick)
     btn_run_stitch.pack()
 
-    slider = Scale(gui, from_=1, to=10, orient=HORIZONTAL)
+    slider = Scale(second_frame, from_=1, to=10, orient=HORIZONTAL)
     slider.pack()
 
     folder_path = str()
-    label_fpath = Label(master=gui, textvariable=folder_path)
+    label_fpath = Label(master=second_frame, textvariable=folder_path)
     label_fpath.pack()
 
-    btn_fpath = ttk.Button(text="Browse", command=browse_button)
+    btn_fpath = ttk.Button(second_frame, text="Browse", command=browse_button)
     btn_fpath.pack()
 
-    # btn_images = ttk.Button(gui, text="Read Folder", command=readFolder)
-    # btn_images.pack()
-
-    btn_img_page = ttk.Button(gui, text="Show Images Page", command=image_page)
+    btn_img_page = ttk.Button(second_frame, text="Show Images Page", command=image_page)
     btn_img_page.pack()
 
-    btn_stitch = ttk.Button(gui, text="Run Stitching", command=stitchingImage)
+    btn_stitch = ttk.Button(second_frame, text="Run Stitching", command=stitchingImage)
     btn_stitch.pack()
 
-    btn_img_page = ttk.Button(gui, text="Show Stitched Images", command=image_page_stitched)
+    btn_img_page = ttk.Button(second_frame, text="Show Stitched Images", command=image_page_stitched)
     btn_img_page.pack()
+
 
     gui.mainloop()
 
