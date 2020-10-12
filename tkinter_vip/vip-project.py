@@ -143,24 +143,13 @@ def stitchingImage():
     # images = resizeImage(images)
     stitcher = cv2.Stitcher.create()
     stitchedImage.clear()
-    print('s')
+    print('stitching')
     try:
         (status, result) = stitcher.stitch(images)
         if status == cv2.STITCHER_OK:
-            print('succ')
+            print('success')
             Label(gui, text='Stitching success').pack()
-            # stitchedImage = result
 
-            # print(images[0].shape)
-            # print(stitchedImage.shape)
-            # print(result.shape)
-
-            # ttk.Button(gui, text="Show Images Page", command=image_page(stitchedImage[0])).pack()
-
-            # print(stitchedImage)
-            # image_page(stitchedImage)
-
-            # create a 10 pixel border surrounding the stitched image
             print("cropping...")
             stitched = cv2.copyMakeBorder(result, 10, 10, 10, 10,
                                           cv2.BORDER_CONSTANT, (0, 0, 0))
@@ -198,8 +187,20 @@ def stitchingImage():
             cv2.imwrite("output.png", stitched)
             print("done crop...")
 
+            # result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+            # cv2.imwrite("output not crop.png", result)
+
         else:
-            Label(master=gui, textvariable='Images cannot be stitched').pack()
+            if status == 1:
+                errMsg = "Not Enough Keypoints. \nNeed More Images"
+
+            if status == 2:
+                errMsg = "Homography Estimation Fail. \nNot Enough Unique Texture or Object to be Matched"
+
+            if status == 3:
+                errMsg = "Camera Parameters Adjust Fail"
+
+            Label(gui, text='Stitching Unsucessful.\n'+errMsg).pack()
     except:
         Label(master=gui, textvariable='Images cannot be stitched').pack()
 
@@ -242,3 +243,9 @@ def main_page():
 
 
 main_page()
+
+# to run
+# python.exe vip-project.py
+
+# to compile
+# pyinstaller.exe --onefile --icon=vip-icon.ico vip-project.py
