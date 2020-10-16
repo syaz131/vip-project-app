@@ -5,10 +5,8 @@ from ttkthemes import ThemedStyle
 from PIL import ImageTk, Image, ImageChops
 import imutils
 
-import os, glob
+import os
 import numpy as np
-import pandas as pd
-
 import cv2
 
 images = []
@@ -20,7 +18,6 @@ gui.geometry("1300x800")
 style = ThemedStyle(gui)
 
 style.set_theme("clearlooks")
-# style.configure('my.pp_Title', fg='blue', fontsize=20)
 gui.title("Panorama and Paint by Number")
 
 main_frame = Frame(gui)
@@ -57,29 +54,10 @@ hscrollbar_list.config(command=listbox.xview)
 hscrollbar_list.pack(side=BOTTOM, fill=X)
 
 
-# png_file = glob.glob("*.png")
-
-# output_pano_file = glob.glob("output-panorama.png")
-# pano_list = Listbox(second_frame)
-# for img in output_pano_file:
-#     pano_list.insert(END, img)
-# pano_list.pack()
-#
-# output_paint_file = glob.glob("output-paint.png")
-# paint_list = Listbox(third_frame)
-# for img in output_paint_file:
-#     paint_list.insert(END, img)
-# paint_list.pack()
-
 def myClick():
     mylabel = ttk.Label(second_frame, text="myclick clicked")
     mylabel.pack()
 
-
-# def start_video(event):
-#     ind = listbox.curselection()
-#     movie_name = listbox.get(ind)
-#     os.startfile(movie_name)
 
 def open_img(event):
     ind = listbox.curselection()
@@ -87,12 +65,7 @@ def open_img(event):
     os.startfile(image_name)
 
 
-listbox.bind('<Double-Button>', open_img)  # look at playVideo
-
-
-# pano_list.bind('<Double-Button>', open_img)
-# paint_list.bind('<Double-Button>', open_img)
-
+listbox.bind('<Double-Button>', open_img)
 
 def open_output(file_name):
     try:
@@ -119,23 +92,6 @@ validation = gui.register(only_numbers)
 input1 = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
 
 
-def myInput():
-    input01 = "Input Number : " + input1.get()
-    mylabel = Label(third_frame, text=input01)
-    mylabel.pack()
-    # to use number, use  int(input1.get())
-
-
-# def showNum():
-#     ttk.Label(forth_frame, text=int(input1.get())).pack()
-
-
-def mySlider(slider):
-    input01 = "Hello " + str(int(slider))
-    mylabel = ttk.Label(gui, text=input01)
-    mylabel.pack()
-
-
 def browse_button():
     global folder_path
 
@@ -147,7 +103,6 @@ def browse_button():
 
     images.clear()
     listbox.delete(0, END)
-    # folder_path = 'C:/Users/Asus/Pictures/scott folder'
     myList = os.listdir(folder_path)
     print(f'Total no of images detected : {len(myList)}')
     print(len(images))
@@ -155,7 +110,6 @@ def browse_button():
         listbox.insert(END, f'{folder_path}/{imgN}')
         curImg = cv2.imread(f'{folder_path}/{imgN}')
         curImg = cv2.cvtColor(curImg, cv2.COLOR_BGR2RGB)
-        # curImg = cv2.resize(curImg, (0, 0), None, 0.2, 0.2)
         images.append(curImg)
 
     # when folder have only 1 image - save that 1 image to stitchedImage
@@ -171,7 +125,6 @@ def showImages():
     for i in range(len(images)):
         canvas = Canvas(gui)
         canvas.pack()
-        # if len(images) > 0:
         imgPil = Image.fromarray(images[i].astype('uint8'), 'RGB')
         myImg = ImageTk.PhotoImage(imgPil)
         img = Label(top, image=myImg)
@@ -199,28 +152,6 @@ def image_page_stitched():
 
     myImg = ImageTk.PhotoImage(thumb)
     Label(top, image=myImg).pack()
-
-
-def image_page():
-    global myImg
-
-    top = Toplevel()
-    top.title("Image Insert")
-    imgPil = Image.fromarray(images[0].astype('uint8'), 'RGB')
-
-    size = (1000, 800)
-    imgPil.thumbnail(size, Image.ANTIALIAS)
-    image_size = imgPil.size
-
-    thumb = imgPil.crop((0, 0, size[0], size[1]))
-
-    offset_x = int(max((size[0] - image_size[0]) / 2, 0))
-    offset_y = int(max((size[1] - image_size[1]) / 2, 0))
-
-    thumb = ImageChops.offset(thumb, offset_x, offset_y)
-
-    myImg = ImageTk.PhotoImage(thumb)
-    label_img = Label(top, image=myImg).pack()
 
 
 def stitchingImage():
