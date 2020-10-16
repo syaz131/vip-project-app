@@ -13,13 +13,14 @@ import cv2
 
 images = []
 stitchedImage = [0]
+inputNumber = 0
 
 gui = Tk()
 gui.geometry("1300x650")
 style = ThemedStyle(gui)
 
 style.set_theme("clearlooks")
-style.configure('my.TButton', foreground="white")
+# style.configure('my.pp_Title', fg='blue', fontsize=20)
 gui.title("Panorama and Paint by Number")
 
 main_frame = Frame(gui)
@@ -33,22 +34,63 @@ scrollbar.pack(side=RIGHT, fill=Y)
 canvas.configure(yscrollcommand=scrollbar.set)
 canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
 
-second_frame = Frame(canvas)
-canvas.create_window((0, 0), window=second_frame, anchor='nw')
+second_frame = Frame(canvas, width=800)
+# second_frame.geometry("400x650")
+canvas.create_window((500, 0), window=second_frame, anchor='n')
+
+third_frame = Frame(canvas)
+# third_frame.geometry("400x650")
+canvas.create_window((900, 41), window=third_frame, anchor='n')
+title = ttk.Label(second_frame, text=" Panorama and Paint by Number ")
+title.config(font=('Courier', 20), background='white')
+title.pack()
+
+forth_frame = Frame(canvas)
+# forth_frame.geometry("400x650")
+canvas.create_window((0, 41), window=forth_frame, anchor='n')
+
+# list_frame = Frame(forth_frame)
+# scrollbar_list = Scrollbar(forth_frame, orient=VERTICAL)
+# listbox = Listbox(forth_frame, yscrollcommand=scrollbar_list)
+# scrollbar_list.config(command=listbox.yview)
+# scrollbar_list.pack(side=RIGHT, fill=Y)
 
 
 def myClick():
     mylabel = ttk.Label(second_frame, text="myclick clicked")
     mylabel.pack()
 
+
+# def start_video(event):
+#     ind = listbox.curselection()
+#     movie_name = listbox.get(ind)
+#     os.startfile(movie_name)
+
+
+# listbox.bind('<Double-Button>', start_video) look at playVideo
+
 # -------- input field ---------
-input1 = Entry(second_frame, width=60)
-input1.pack()
+label_paint = ttk.Label(third_frame, text="Paint Section", borderwidth=3, relief="sunken")
+label_paint.config(font=('Courier', 13), background='white', width=20, anchor='center')
+label_paint.pack()
+ttk.Label(third_frame, text="Insert a number : ").pack()
+
+def only_numbers(char):
+    return char.isdigit()
+
+validation = gui.register(only_numbers)
+input1 = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
+
 
 def myInput():
-    input01 = "Hello " + input1.get()
-    mylabel = ttk.Label(gui, text=input01)
+    input01 = "Input Number : " + input1.get()
+    mylabel = Label(third_frame, text=input01)
     mylabel.pack()
+    #to use number, use  int(input1.get())
+
+
+# def showNum():
+#     ttk.Label(forth_frame, text=int(input1.get())).pack()
 
 
 def mySlider(slider):
@@ -62,7 +104,7 @@ def browse_button():
 
     filename = filedialog.askdirectory()
     folder_path = filename
-    lbl_path = ttk.Label(gui, text=folder_path)
+    lbl_path = Label(forth_frame, text=folder_path)
     lbl_path.pack()
     print(filename)
 
@@ -112,7 +154,7 @@ def image_page_stitched():
     thumb = ImageChops.offset(thumb, offset_x, offset_y)
 
     myImg = ImageTk.PhotoImage(thumb)
-    label_img = Label(top, image=myImg).pack()
+    Label(top, image=myImg).pack()
 
 
 def image_page():
@@ -147,7 +189,7 @@ def stitchingImage():
         (status, result) = stitcher.stitch(images)
         if status == cv2.STITCHER_OK:
             print('success')
-            Label(gui, text='Stitching success').pack()
+            Label(second_frame, text='Stitching Success. \n Save Panorama as output.png').pack()
 
             print("cropping...")
             stitched = cv2.copyMakeBorder(result, 10, 10, 10, 10,
@@ -203,36 +245,46 @@ def stitchingImage():
     except:
         Label(master=gui, textvariable='Images cannot be stitched').pack()
 
+def run_painting(num):
+    Label(third_frame, text=num).pack()
+
 
 def main_page():
-    label_panorama = ttk.Label(second_frame, text="Panorama Section")
+    # =========================== Panorama section
+    label_panorama = ttk.Label(second_frame, text="Panorama Section", borderwidth=3, relief="sunken")
+    label_panorama.config(font=('Courier', 13), background='white', width=30, anchor='center')
     label_panorama.pack()
 
-    btn_input1 = ttk.Button(second_frame, text="Input 1", command=myInput)
+    # ============================= Paint section
+    input1.pack()
+
+    btn_input1 = ttk.Button(third_frame, text="Confirm Insert Number", command=myInput)
     btn_input1.pack()
 
-    btn_run_stitch = ttk.Button(second_frame, text="Ex Button Click", command=myClick)
-    btn_run_stitch.pack()
+    ttk.Button(third_frame, text="Start Painting", command=lambda : run_painting(int(input1.get()))).pack()
 
-    slider = Scale(second_frame, from_=1, to=10, orient=HORIZONTAL)
-    slider.pack()
+    # ============ File Browse Section
+    label_file = ttk.Label(forth_frame, text="File Browse Section", borderwidth=3, relief="sunken")
+    label_file.config(font=('Courier', 13), background='white', width=26, anchor='center')
+    label_file.pack()
 
-    folder_path = str()
-    label_fpath = Label(master=second_frame, textvariable=folder_path)
-    label_fpath.pack()
+    # listbox.pack()
 
-    btn_fpath = ttk.Button(second_frame, text="Browse", command=browse_button)
+    btn_fpath = ttk.Button(forth_frame, text="Browse", command=browse_button)
     btn_fpath.pack()
 
+    # ===================
+
     btn_img_page = ttk.Button(second_frame, text="Show Images Page", command=image_page)
-    btn_img_page.pack()
+    # btn_img_page.pack()
 
     btn_stitch = ttk.Button(second_frame, text="Run Stitching", command=stitchingImage)
     btn_stitch.pack()
 
-    btn_img_page = ttk.Button(second_frame, text="Show Stitched Images", command=image_page_stitched)
-    btn_img_page.pack()
+    # ttk.Button(forth_frame, text="Run showNum", command=showNum).pack()
 
+    btn_img_page = ttk.Button(second_frame, text="Show Stitched Images", command=image_page_stitched)
+    # btn_img_page.pack()
 
     gui.mainloop()
 
