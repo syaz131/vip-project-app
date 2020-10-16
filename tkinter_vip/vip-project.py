@@ -228,9 +228,9 @@ def stitchingImage():
 def run_painting(num):
     # use stitchedImage[0] - RGB
     stitched = stitchedImage[0]
-    # stitched = cv2.cvtColor(stitchedImage[0], cv2.COLOR_BGR2RGB)
-    cv2.imwrite('terbalik.png', stitched)
-    os.startfile('terbalik.png')
+    # stitched = cv2.cvtColor(stitchedImage[0], cv2.COLOR_BGR2RGB) # confuse with RGB2BGR
+    # cv2.imwrite('terbalik.png', stitched)
+    # os.startfile('terbalik.png')
     Label(third_frame, text=num).pack()
 
     # output_name = 'output-paint.png'
@@ -272,6 +272,7 @@ def main_page():
 
     list_frame.pack(pady=10)
     listbox.pack()
+    Label(forth_frame, text="Double click on list to open image").pack()
 
     btn_fpath = ttk.Button(forth_frame, text="Browse", command=browse_button)
     btn_fpath.pack(pady=10)
