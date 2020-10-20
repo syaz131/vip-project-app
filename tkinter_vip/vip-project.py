@@ -3,6 +3,8 @@ from tkinter import *
 import tkinter.ttk as ttk
 from ttkthemes import ThemedStyle
 from PIL import ImageTk, Image, ImageChops
+import skimage.color as color
+from skimage.segmentation import slic
 import imutils
 
 import os
@@ -10,7 +12,8 @@ import numpy as np
 import cv2
 
 images = []
-stitchedImage = [0]
+stitchedImage = []
+paintedImage = []
 inputNumber = 0
 
 gui = Tk()
@@ -73,7 +76,7 @@ def open_output(file_name):
     except:
         if file_name == 'output-panorama.png':
             Label(second_frame, text="No file ").pack()
-        if file_name == 'output-paint.png':
+        if file_name == 'PBN_OUTPUT.png' or file_name == 'PBN_OUTLINE.png':
             Label(third_frame, text="No file ").pack()
 
 
@@ -81,7 +84,6 @@ def open_output(file_name):
 label_paint = ttk.Label(third_frame, text="Paint Section", borderwidth=3, relief="sunken")
 label_paint.config(font=('Courier', 13), background='white', width=20, anchor='center')
 label_paint.pack(pady=10)
-Label(third_frame, text="Insert a number : ").pack(pady=10)
 
 
 def only_numbers(char):
@@ -89,7 +91,9 @@ def only_numbers(char):
 
 
 validation = gui.register(only_numbers)
-input1 = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
+input_color = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
+
+input_segment = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
 
 
 def browse_button():
@@ -114,9 +118,10 @@ def browse_button():
 
     # when folder have only 1 image - save that 1 image to stitchedImage
     stitchedImage.clear()
-    if len(images) == 1:
-        stitchedImage.append(images[0])
 
+    print('append 1 image : ')
+    print(len(images))
+    print('\n')
 
 def showImages():
     top = Toplevel()
@@ -160,7 +165,10 @@ def stitchingImage():
     print('stitching')
 
     if len(images) == 1:
-        Label(second_frame, text='Not Enough Image. Skip to Paint Section').pack()
+        output_name = 'output-panorama.png'
+        singleImg = cv2.cvtColor(images[0], cv2.COLOR_BGR2RGB)
+        cv2.imwrite(output_name, singleImg)
+        Label(second_frame, text='Not Enough Image. Proceed to Paint Section').pack()
 
     try:
         (status, result) = stitcher.stitch(images)
@@ -225,19 +233,89 @@ def stitchingImage():
         Label(master=gui, textvariable='Images cannot be stitched').pack()
 
 
-def run_painting(num):
-    # use stitchedImage[0] - RGB
-    stitched = stitchedImage[0]
-    # stitched = cv2.cvtColor(stitchedImage[0], cv2.COLOR_BGR2RGB) # confuse with RGB2BGR
-    # cv2.imwrite('terbalik.png', stitched)
-    # os.startfile('terbalik.png')
-    Label(third_frame, text=num).pack()
+def SLIC_Kmeans(n_segments, n_colours):
+    img_name = 'output-panorama.png'
 
-    # output_name = 'output-paint.png'
-    # cv2.imwrite(output_name, stitched)
-    # Label(second_frame, text='Stitching Success. \n Save Panorama as output-panorama.png').pack()
-    # os.startfile(output_name)
+    image = cv2.imread(img_name)
 
+    try:
+        cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    except:
+        Label(third_frame, text="No file ").pack()
+
+    img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # img = stitchedImage[0].copy()
+
+    r = img.shape[0]
+    c = img.shape[1]
+    segments_slic = slic(img, n_segments=n_segments, sigma=1.0)
+    segmented_pano = color.label2rgb(segments_slic, img, kind='avg')
+    pixels = np.float32(segmented_pano.reshape(-1, 3))
+    # user input number colours
+    n_colors = n_colours
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, .1)
+    flags = cv2.KMEANS_RANDOM_CENTERS
+    _, labels, palette = cv2.kmeans(pixels, n_colors, None, criteria, 10, flags)
+    _, counts = np.unique(labels, return_counts=True)
+    img_rb = np.reshape(labels, (r, c))
+
+    # colourize
+    colourize = color.label2rgb(img_rb, img, kind='avg')
+
+    row = colourize.shape[0]
+    column = colourize.shape[1]
+    dim = colourize.shape[2]
+    colourize_reshape = np.reshape(colourize, (row * column, dim))
+    unique_colour = np.unique(colourize_reshape, axis=0)
+
+    img_output = cv2.cvtColor(colourize, cv2.COLOR_RGB2BGR)
+    paintedImage.clear()
+    paintedImage.append(img_output)
+    cv2.imwrite("PBN_OUTPUT.png", img_output)
+    print("PBN created")
+
+    # Outline
+    outline = np.zeros((r, c, 3), np.uint8)
+    outline[outline == 0] = 255
+
+    for idx, val in enumerate(unique_colour):
+        r = val[0]
+        g = val[1]
+        b = val[2]
+        low_1 = np.array([r, g, b])
+        high_1 = np.array([r, g, b])
+        # Creaing a mask rom the original image
+        mask_1 = cv2.inRange(colourize, low_1, high_1)
+
+        # threshold
+        ret, outImg = cv2.threshold(mask_1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        outImg[outImg == 255] = 1
+
+        # contours
+        cnts = cv2.findContours(outImg.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+
+        for c in cnts:
+            # compute the center of the contour
+            M = cv2.moments(c)
+            cX = int(M["m10"] / (M["m00"] + 0.000000001))
+            # print(cX)
+            cY = int(M["m01"] / (M["m00"] + 0.000000001))
+            # print(cY)
+
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            index = idx + 1
+            # draw the contour and center of the shape on the image
+            cv2.drawContours(outline, [c], -1, (0, 0, 0), 1),
+            cv2.putText(outline, str(index), (cX, cY), font, 0.5, (0, 0, 0), 1)
+            # show the image
+
+    Label(third_frame, text="Paint Success").pack()
+    cv2.imwrite("PBN_OUTLINE.png", outline)
+    print("Outline created")
+
+    os.startfile("PBN_OUTLINE.png")
+    os.startfile("PBN_OUTPUT.png")
 
 
 def main_page():
@@ -256,14 +334,26 @@ def main_page():
     btn_pano_output.pack(pady=10)
 
     # ============================= Paint section
-    input1.pack()
-    ttk.Button(third_frame, text="Start Painting", command=lambda: run_painting(int(input1.get()))).pack(pady=10)
+    Label(third_frame, text="Insert number of Colours (recommended 10 - 50) : ").pack(pady=10)
+    input_color.pack()
+    Label(third_frame, text="Insert number of Segments : (recommended 300 - 1500)").pack(pady=10)
+    input_segment.pack()
 
-    output_paint_name = 'output-paint.png'
+    # ttk.Button(third_frame, text="Start Painting", command=lambda: run_painting(int(input_color.get()))).pack(pady=10)
+    ttk.Button(third_frame, text="Start Painting", command=lambda: SLIC_Kmeans(int(input_segment.get()),
+                                                                               int(input_color.get()))).pack(pady=10)
+
+    output_paint_name = 'PBN_OUTPUT.png'
     btn_paint_output = ttk.Button(third_frame,
                                   text='Open Paint Output',
                                   command=lambda: open_output(output_paint_name))
     btn_paint_output.pack(pady=10)
+
+    output_paintOutline_name = 'PBN_OUTLINE.png'
+    btn_paintOutline_output = ttk.Button(third_frame,
+                                  text='Open Paint Output',
+                                  command=lambda: open_output(output_paintOutline_name))
+    btn_paintOutline_output.pack(pady=10)
 
     # ============ File Browse Section
     label_file = ttk.Label(forth_frame, text="File Browse Section", borderwidth=3, relief="sunken")
