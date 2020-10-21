@@ -2,7 +2,6 @@ from tkinter import filedialog
 from tkinter import *
 import tkinter.ttk as ttk
 from ttkthemes import ThemedStyle
-from PIL import ImageTk, Image, ImageChops
 import skimage.color as color
 from skimage.segmentation import slic
 import imutils
@@ -92,7 +91,6 @@ def only_numbers(char):
 
 validation = gui.register(only_numbers)
 input_color = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
-
 input_segment = Entry(third_frame, width=30, validate="key", validatecommand=(validation, '%S'))
 
 
@@ -122,41 +120,6 @@ def browse_button():
     print('append 1 image : ')
     print(len(images))
     print('\n')
-
-def showImages():
-    top = Toplevel()
-    top.title("Image Insert")
-
-    for i in range(len(images)):
-        canvas = Canvas(gui)
-        canvas.pack()
-        imgPil = Image.fromarray(images[i].astype('uint8'), 'RGB')
-        myImg = ImageTk.PhotoImage(imgPil)
-        img = Label(top, image=myImg)
-        img.image = myImg
-        img.place(x=0, y=0)
-
-
-def image_page_stitched():
-    global myImg
-
-    top = Toplevel()
-    top.title("Image Insert")
-    imgPil = Image.fromarray(stitchedImage[0].astype('uint8'), 'RGB')
-
-    size = (1000, 800)
-    imgPil.thumbnail(size, Image.ANTIALIAS)
-    image_size = imgPil.size
-
-    thumb = imgPil.crop((0, 0, size[0], size[1]))
-
-    offset_x = int(max((size[0] - image_size[0]) / 2, 0))
-    offset_y = int(max((size[1] - image_size[1]) / 2, 0))
-
-    thumb = ImageChops.offset(thumb, offset_x, offset_y)
-
-    myImg = ImageTk.PhotoImage(thumb)
-    Label(top, image=myImg).pack()
 
 
 def stitchingImage():
@@ -314,8 +277,48 @@ def SLIC_Kmeans(n_segments, n_colours):
     cv2.imwrite("PBN_OUTLINE.png", outline)
     print("Outline created")
 
+    indices = np.argsort(counts)[::-1]
+    freqs = np.cumsum(np.hstack([[0], counts[indices] / float(counts.sum())]))
+    rows = np.int_(colourize.shape[0] * freqs)
+    dom_patch = np.zeros(shape=colourize.shape, dtype=np.uint8)
+    for i in range(len(rows) - 1):
+        dom_patch[rows[i]:rows[i + 1], :, :] += np.uint8(unique_colour[indices[i]])
+
+    for idx, val in enumerate(unique_colour):
+        r = val[0]
+        g = val[1]
+        b = val[2]
+        low_1 = np.array([r, g, b])
+        high_1 = np.array([r, g, b])
+        # Creating a mask rom the original image
+        mask_1 = cv2.inRange(dom_patch, low_1, high_1)
+
+        # contours
+        cnts = cv2.findContours(mask_1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+
+        for c in cnts:
+            # compute the center of the contour
+            M = cv2.moments(c)
+            cX = int(M["m10"] / (M["m00"] + 0.000000001))
+            # print(cX)
+            cY = int(M["m01"] / (M["m00"] + 0.000000001))
+            # print(cY)
+
+            font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+            index = idx + 1
+            # draw the contour and center of the shape on the image
+            # cv2.drawContours(img_palette, [c], -1, (0,0,0), 1),
+            cv2.putText(dom_patch, str(index), (cX, cY), font, 0.5, (255, 255, 255), 1)
+            # show the image
+
+        final_palette = cv2.cvtColor(dom_patch, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("PALETTE_OUTPUT.png", final_palette)
+        print("PALETTE created")
+
     os.startfile("PBN_OUTLINE.png")
     os.startfile("PBN_OUTPUT.png")
+    os.startfile("PALETTE_OUTPUT.png")
 
 
 def main_page():
@@ -334,14 +337,15 @@ def main_page():
     btn_pano_output.pack(pady=10)
 
     # ============================= Paint section
-    Label(third_frame, text="Insert number of Colours (recommended 10 - 50) : ").pack(pady=10)
+    Label(third_frame, text="Insert number of Colours (recommended 10 - 25) : ").pack(pady=10)
     input_color.pack()
-    Label(third_frame, text="Insert number of Segments : (recommended 300 - 1500)").pack(pady=10)
+    Label(third_frame, text="Insert number of Segments (recommended 300 - 800) : ").pack(pady=10)
     input_segment.pack()
 
     # ttk.Button(third_frame, text="Start Painting", command=lambda: run_painting(int(input_color.get()))).pack(pady=10)
-    ttk.Button(third_frame, text="Start Painting", command=lambda: SLIC_Kmeans(int(input_segment.get()),
-                                                                               int(input_color.get()))).pack(pady=10)
+
+    ttk.Button(third_frame, text="Start Painting",
+               command=lambda: SLIC_Kmeans(int(input_segment.get()), int(input_color.get()))).pack(pady=10)
 
     output_paint_name = 'PBN_OUTPUT.png'
     btn_paint_output = ttk.Button(third_frame,
@@ -354,6 +358,12 @@ def main_page():
                                   text='Open Outline Output',
                                   command=lambda: open_output(output_paintOutline_name))
     btn_paintOutline_output.pack(pady=10)
+
+    output_palette_name = 'PALETTE_OUTPUT.png'
+    btn_palette_output = ttk.Button(third_frame,
+                                         text='Open Palette Output',
+                                         command=lambda: open_output(output_palette_name))
+    btn_palette_output.pack(pady=10)
 
     # ============ File Browse Section
     label_file = ttk.Label(forth_frame, text="File Browse Section", borderwidth=3, relief="sunken")
@@ -377,3 +387,5 @@ main_page()
 
 # to compile
 # pyinstaller.exe --onefile --icon=vip-icon.ico vip-project.py
+# pyinstaller.exe --onedir --icon=vip-icon.ico vip-project.py
+# pyinstaller.exe --onefile vip-project.py
