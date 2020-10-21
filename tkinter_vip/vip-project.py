@@ -351,7 +351,7 @@ def main_page():
 
     output_paintOutline_name = 'PBN_OUTLINE.png'
     btn_paintOutline_output = ttk.Button(third_frame,
-                                  text='Open Paint Output',
+                                  text='Open Outline Output',
                                   command=lambda: open_output(output_paintOutline_name))
     btn_paintOutline_output.pack(pady=10)
 
